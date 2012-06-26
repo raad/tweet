@@ -27,6 +27,7 @@
       auto_join_text_url: "I was looking at",   // [string]   auto tense for urls: "I was looking at" http:...
       loading_text: null,                       // [string]   optional loading text, displayed while tweets load
       refresh_interval: null,                   // [integer]  optional number of seconds after which to reload tweets
+	  relative_times: true,                     // [boolean]  display relative times for tweets, otherwise display locale date + hh:mm
       twitter_url: "twitter.com",               // [string]   custom twitter url, if any (apigee, etc.)
       twitter_api_url: "api.twitter.com",       // [string]   custom twitter api url, if any (apigee, etc.)
       twitter_search_url: "search.twitter.com", // [string]   custom twitter search url, if any (apigee, etc.)
@@ -128,6 +129,11 @@
       return 'just now';
     }
 
+	function format_pretty_time(datems) {
+		var thedate = new Date(datems);
+		return [thedate.toLocaleDateString(), [thedate.getHours(), ':', thedate.getMinutes()].join('')].join(' ');
+	}
+	
     function build_auto_join_text(text) {
       if (text.match(/^(@([A-Za-z0-9-_]+)) .*/i)) {
         return s.auto_join_text_reply;
@@ -192,7 +198,7 @@
       o.retweet_url = o.twitter_base+"intent/retweet?tweet_id="+o.tweet_id;
       o.favorite_url = o.twitter_base+"intent/favorite?tweet_id="+o.tweet_id;
       o.retweeted_screen_name = o.retweet && item.retweeted_status.user.screen_name;
-      o.tweet_relative_time = format_relative_time(extract_relative_time(o.tweet_time));
+      o.tweet_time_text = s.relative_times ? format_relative_time(extract_relative_time(o.tweet_time)) : format_pretty_time(o.tweet_time);
       o.entities = item.entities ? (item.entities.urls || []).concat(item.entities.media || []) : [];
       o.tweet_raw_text = o.retweet ? ('RT @'+o.retweeted_screen_name+' '+item.retweeted_status.text) : item.text; // avoid '...' in long retweets
       o.tweet_text = $([linkURLs(o.tweet_raw_text, o.entities)]).linkUser().linkHash()[0];
@@ -203,7 +209,7 @@
       o.join = s.join_text ? t(' <span class="tweet_join">{join_text}</span> ', o) : ' ';
       o.avatar = o.avatar_size ?
         t('<a class="tweet_avatar" href="{user_url}"><img src="{avatar_url}" height="{avatar_size}" width="{avatar_size}" alt="{screen_name}\'s avatar" title="{screen_name}\'s avatar" border="0"/></a>', o) : '';
-      o.time = t('<span class="tweet_time"><a href="{tweet_url}" title="view tweet on twitter">{tweet_relative_time}</a></span>', o);
+      o.time = t('<span class="tweet_time"><a href="{tweet_url}" title="view tweet on twitter">{tweet_time_text}</a></span>', o);
       o.text = t('<span class="tweet_text">{tweet_text_fancy}</span>', o);
       o.reply_action = t('<a class="tweet_action tweet_reply" href="{reply_url}">reply</a>', o);
       o.retweet_action = t('<a class="tweet_action tweet_retweet" href="{retweet_url}">retweet</a>', o);
